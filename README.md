@@ -1,132 +1,203 @@
 # Solana Scripts
 
-This is a library of Rust scripts for specific purposes:
+This document contains the help content for the `scripts` command-line program.
 
-- [Generate a new wallet](#new-wallet)
-- [Create an SPL token](#create-an-spl-token)
-- [Mint an SPL token](#mint-spl-tokens)
-- [Get an associated token balance](#get-token-balance)
-- [Get the creation date of an account](#get-account-creation-timestamp)
-- [Get the owner of an NFT](#get-nft-owner)
-- [List NFTs in wallet](#list-nfts-in-wallet)
-- [Subscribe to events](#subscribe-to-events)
-- [Fetch onchain Anchor IDL](#fetch-onchain-anchor-idl)
+**Command Overview:**
 
-The scripts are found in the `src/bin` folder. They can be configured using environment variables, which are documented below.
+* [`scripts`↴](#scripts)
+* [`scripts new-wallet`↴](#scripts-new-wallet)
+* [`scripts create-spl`↴](#scripts-create-spl)
+* [`scripts mint-spl`↴](#scripts-mint-spl)
+* [`scripts associated-token-balance`↴](#scripts-associated-token-balance)
+* [`scripts creation-date`↴](#scripts-creation-date)
+* [`scripts nft-owner`↴](#scripts-nft-owner)
+* [`scripts list-nfts`↴](#scripts-list-nfts)
+* [`scripts pubsub`↴](#scripts-pubsub)
+* [`scripts fetch-idl`↴](#scripts-fetch-idl)
+* [`scripts transfer-sol`↴](#scripts-transfer-sol)
+* [`scripts wrap-sol`↴](#scripts-wrap-sol)
 
-[Open an issue](https://github.com/ronanyeah/solana-rust-examples/issues) if you have any requests or suggestions.
+## `scripts`
 
----
+A collection of Solana scripts.
 
-## New wallet
+Run a command with `cargo run -- <COMMAND>`. Options can also be set with environment variables (e.g. `RPC_URL`, `SIGNER_KEYPAIR`), see `<COMMAND> --help` for the names.
 
-`cargo run --bin new_wallet` | [Code](./src/bin/new_wallet.rs)
+**Usage:** `scripts <COMMAND>`
 
-Generates a new wallet and prints the pubkey, Base58 private key, and JSON private key.
+###### **Subcommands:**
 
----
+* `new-wallet` — Generate a new wallet and print the pubkey, Base58 private key, and JSON private key
+* `create-spl` — Create a new SPL token mint account
+* `mint-spl` — Mint SPL tokens to the associated token account of a wallet (signer must be the mint authority)
+* `associated-token-balance` — Print the balance of an associated token account, for a wallet and mint
+* `creation-date` — Print the creation timestamp of an account
+* `nft-owner` — Print the wallet address that owns an NFT
+* `list-nfts` — Print the mint pubkeys of every NFT in a wallet
+* `pubsub` — Listen to slotSubscribe events
+* `fetch-idl` — Fetch the onchain Anchor IDL of a program
+* `transfer-sol` — Transfer SOL with a memo and priority fee
+* `wrap-sol` — Wrap SOL into the signer's WSOL associated token account
 
-## Create an SPL token
 
-`cargo run --bin create_spl` | [Code](./src/bin/create_spl.rs)
 
-Creates a new [SPL token](https://spl.solana.com/token) mint account.
+## `scripts new-wallet`
 
-| Environment Variable | Note                                                       |
-| -------------------- | ---------------------------------------------------------- |
-| RPC_URL              | e.g. `https://api.mainnet-beta.solana.com`                 |
-| SIGNER_KEYPAIR       | Base58 encoded keypair, to pay for the transaction.        |
-| MINT_KEYPAIR         | Base58 encoded keypair, representing the new mint account. |
+Generate a new wallet and print the pubkey, Base58 private key, and JSON private key
 
----
+**Usage:** `scripts new-wallet`
 
-## Mint SPL tokens
 
-`cargo run --bin mint_spl` | [Code](./src/bin/mint_spl.rs)
 
-Mints 10,000 SPL tokens from a specified mint to the [associated token account](https://spl.solana.com/associated-token-account) of a specified wallet.
+## `scripts create-spl`
 
-| Environment Variable | Note                                                               |
-| -------------------- | ------------------------------------------------------------------ |
-| RPC_URL              | e.g. `https://api.mainnet-beta.solana.com`                         |
-| SIGNER_KEYPAIR       | Base58 encoded keypair, which has mint authority.                  |
-| MINT_ACCOUNT_PUBKEY  | The pubkey address of the SPL Token mint account.                  |
-| RECEIVER_PUBKEY      | The pubkey address of the wallet you want to fund with the tokens. |
+Create a new SPL token mint account
 
----
+**Usage:** `scripts create-spl [OPTIONS] --rpc-url <RPC_URL> --signer-keypair <KEYPAIR> --mint-keypair <MINT_KEYPAIR>`
 
-## Get token balance
+###### **Options:**
 
-`cargo run --bin associated_token_balance` | [Code](./src/bin/associated_token_balance.rs)
+* `--rpc-url <RPC_URL>` — Solana RPC endpoint, e.g. https://api.mainnet-beta.solana.com
+* `--signer-keypair <KEYPAIR>` — Base58 encoded keypair that signs and pays for the transaction
+* `--mint-keypair <MINT_KEYPAIR>` — Base58 encoded keypair, representing the new mint account
+* `--decimals <DECIMALS>` — Number of decimals for the new mint
 
-Prints the balance of an [associated token account](https://spl.solana.com/associated-token-account), for a specified wallet and mint.
+  Default value: `9`
 
-| Environment Variable | Note                                                   |
-| -------------------- | ------------------------------------------------------ |
-| RPC_URL              | e.g. `https://api.mainnet-beta.solana.com`             |
-| WALLET_PUBKEY        | The pubkey address of the wallet that owns the tokens. |
-| MINT_ACCOUNT_PUBKEY  | The pubkey address of the SPL Token mint account.      |
 
----
 
-## Get account creation timestamp
+## `scripts mint-spl`
 
-`cargo run --bin creation_date` | [Code](./src/bin/creation_date.rs)
+Mint SPL tokens to the associated token account of a wallet (signer must be the mint authority)
 
-Fetches and prints the creation timestamp of a specified [account](https://docs.solana.com/developing/programming-model/accounts).
+**Usage:** `scripts mint-spl [OPTIONS] --rpc-url <RPC_URL> --signer-keypair <KEYPAIR> --mint-account-pubkey <MINT_ACCOUNT_PUBKEY> --receiver-pubkey <RECEIVER_PUBKEY>`
 
-| Environment Variable | Note                                                      |
-| -------------------- | --------------------------------------------------------- |
-| RPC_URL              | e.g. `https://api.mainnet-beta.solana.com`                |
-| ACCOUNT_PUBKEY       | The pubkey address of the account you want to introspect. |
+###### **Options:**
 
----
+* `--rpc-url <RPC_URL>` — Solana RPC endpoint, e.g. https://api.mainnet-beta.solana.com
+* `--signer-keypair <KEYPAIR>` — Base58 encoded keypair that signs and pays for the transaction
+* `--mint-account-pubkey <MINT_ACCOUNT_PUBKEY>` — The pubkey address of the SPL Token mint account
+* `--receiver-pubkey <RECEIVER_PUBKEY>` — The pubkey address of the wallet you want to fund with the tokens
+* `--amount <AMOUNT>` — Amount to mint, in base units
 
-## Get NFT owner
+  Default value: `10000`
 
-`cargo run --bin nft_owner` | [Code](./src/bin/nft_owner.rs)
 
-Prints the wallet address that owns a specified NFT.
 
-| Environment Variable | Note                                              |
-| -------------------- | ------------------------------------------------- |
-| RPC_URL              | e.g. `https://api.mainnet-beta.solana.com`        |
-| MINT_ACCOUNT_PUBKEY  | The pubkey address of the SPL Token mint account. |
+## `scripts associated-token-balance`
 
----
+Print the balance of an associated token account, for a wallet and mint
 
-## List NFTs in wallet
+**Usage:** `scripts associated-token-balance --rpc-url <RPC_URL> --wallet-pubkey <WALLET_PUBKEY> --mint-account-pubkey <MINT_ACCOUNT_PUBKEY>`
 
-`cargo run --bin list_nfts` | [Code](./src/bin/list_nfts.rs)
+###### **Options:**
 
-Fetches and prints the mint pubkeys of every NFT in the specified wallet.
+* `--rpc-url <RPC_URL>` — Solana RPC endpoint, e.g. https://api.mainnet-beta.solana.com
+* `--wallet-pubkey <WALLET_PUBKEY>` — The pubkey address of the wallet that owns the tokens
+* `--mint-account-pubkey <MINT_ACCOUNT_PUBKEY>` — The pubkey address of the SPL Token mint account
 
-| Environment Variable | Note                                              |
-| -------------------- | ------------------------------------------------- |
-| RPC_URL              | e.g. `https://api.mainnet-beta.solana.com`        |
-| WALLET_PUBKEY        | The pubkey address of the wallet that owns the NFTs. |
 
----
 
-## Subscribe to events
+## `scripts creation-date`
 
-`cargo run --bin pubsub` | [Code](./src/bin/pubsub.rs)
+Print the creation timestamp of an account
 
-Listens to events from [`slotSubscribe`](https://solana.com/docs/rpc/websocket/slotsubscribe).
+**Usage:** `scripts creation-date --rpc-url <RPC_URL> --account-pubkey <ACCOUNT_PUBKEY>`
 
-| Environment Variable | Note                                              |
-| -------------------- | ------------------------------------------------- |
-| WS_URL              | e.g. `wss://api.mainnet-beta.solana.com`        |
+###### **Options:**
 
----
+* `--rpc-url <RPC_URL>` — Solana RPC endpoint, e.g. https://api.mainnet-beta.solana.com
+* `--account-pubkey <ACCOUNT_PUBKEY>` — The pubkey address of the account you want to introspect
 
-## Fetch onchain Anchor IDL
 
-`cargo run --bin fetch_idl` | [Code](./src/bin/fetch_idl.rs)
 
-Fetches an [`Anchor IDL`](https://solana.com/docs/programs/anchor/idl) from a program address.
+## `scripts nft-owner`
 
-| Environment Variable | Note                                              |
-| -------------------- | ------------------------------------------------- |
-| WS_URL              | e.g. `wss://api.mainnet-beta.solana.com`           |
-| PROGRAM_ID        | The program address pubkey. e.g. `whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc` |
+Print the wallet address that owns an NFT
+
+**Usage:** `scripts nft-owner --rpc-url <RPC_URL> --mint-account-pubkey <MINT_ACCOUNT_PUBKEY>`
+
+###### **Options:**
+
+* `--rpc-url <RPC_URL>` — Solana RPC endpoint, e.g. https://api.mainnet-beta.solana.com
+* `--mint-account-pubkey <MINT_ACCOUNT_PUBKEY>` — The pubkey address of the SPL Token mint account
+
+
+
+## `scripts list-nfts`
+
+Print the mint pubkeys of every NFT in a wallet
+
+**Usage:** `scripts list-nfts --rpc-url <RPC_URL> --wallet-pubkey <WALLET_PUBKEY>`
+
+###### **Options:**
+
+* `--rpc-url <RPC_URL>` — Solana RPC endpoint, e.g. https://api.mainnet-beta.solana.com
+* `--wallet-pubkey <WALLET_PUBKEY>` — The pubkey address of the wallet that owns the NFTs
+
+
+
+## `scripts pubsub`
+
+Listen to slotSubscribe events
+
+**Usage:** `scripts pubsub [OPTIONS] --ws-url <WS_URL>`
+
+###### **Options:**
+
+* `--ws-url <WS_URL>` — Solana websocket endpoint, e.g. wss://api.mainnet-beta.solana.com
+* `--count <COUNT>` — Number of slot updates to print before exiting
+
+  Default value: `5`
+
+
+
+## `scripts fetch-idl`
+
+Fetch the onchain Anchor IDL of a program
+
+**Usage:** `scripts fetch-idl --rpc-url <RPC_URL> --program-id <PROGRAM_ID>`
+
+###### **Options:**
+
+* `--rpc-url <RPC_URL>` — Solana RPC endpoint, e.g. https://api.mainnet-beta.solana.com
+* `--program-id <PROGRAM_ID>` — The program address pubkey, e.g. whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc
+
+
+
+## `scripts transfer-sol`
+
+Transfer SOL with a memo and priority fee
+
+**Usage:** `scripts transfer-sol [OPTIONS] --rpc-url <RPC_URL> --signer-keypair <KEYPAIR> --receiver-pubkey <RECEIVER_PUBKEY>`
+
+###### **Options:**
+
+* `--rpc-url <RPC_URL>` — Solana RPC endpoint, e.g. https://api.mainnet-beta.solana.com
+* `--signer-keypair <KEYPAIR>` — Base58 encoded keypair that signs and pays for the transaction
+* `--receiver-pubkey <RECEIVER_PUBKEY>` — The pubkey address of the wallet receiving the SOL
+* `--amount <AMOUNT>` — Amount to send, in lamports
+
+  Default value: `1000000`
+* `--memo <MEMO>` — Memo attached to the transfer
+
+  Default value: `hello solana`
+
+
+
+## `scripts wrap-sol`
+
+Wrap SOL into the signer's WSOL associated token account
+
+**Usage:** `scripts wrap-sol [OPTIONS] --rpc-url <RPC_URL> --signer-keypair <KEYPAIR>`
+
+###### **Options:**
+
+* `--rpc-url <RPC_URL>` — Solana RPC endpoint, e.g. https://api.mainnet-beta.solana.com
+* `--signer-keypair <KEYPAIR>` — Base58 encoded keypair that signs and pays for the transaction
+* `--amount <AMOUNT>` — Amount of SOL to wrap, in lamports
+
+  Default value: `1000000000`
+
+
+

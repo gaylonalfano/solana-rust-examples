@@ -3,8 +3,11 @@ mod cmd;
 use clap::{Parser, Subcommand};
 
 /// A collection of Solana scripts.
+///
+/// Run a command with `cargo run -- <COMMAND>`. Options can also be set with environment
+/// variables (e.g. `RPC_URL`, `SIGNER_KEYPAIR`), see `<COMMAND> --help` for the names.
 #[derive(Parser)]
-#[command(version, about)]
+#[command(version)]
 struct Cli {
     #[command(subcommand)]
     command: Command,
@@ -34,6 +37,9 @@ enum Command {
     TransferSol(cmd::transfer_sol::Args),
     /// Wrap SOL into the signer's WSOL associated token account
     WrapSol(cmd::wrap_sol::Args),
+    /// Print this CLI's help as Markdown, used to generate README.md
+    #[command(hide = true)]
+    MarkdownHelp,
 }
 
 #[tokio::main]
@@ -50,5 +56,12 @@ async fn main() -> anyhow::Result<()> {
         Command::FetchIdl(args) => args.run().await,
         Command::TransferSol(args) => args.run().await,
         Command::WrapSol(args) => args.run().await,
+        Command::MarkdownHelp => {
+            let options = clap_markdown::MarkdownOptions::new()
+                .title("Solana Scripts".to_string())
+                .show_footer(false);
+            print!("{}", clap_markdown::help_markdown_custom::<Cli>(&options));
+            Ok(())
+        }
     }
 }
