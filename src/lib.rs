@@ -17,17 +17,14 @@ pub enum TokenAccountType {
 pub async fn fetch_token_2022_nft_metadata(
     rpc: &RpcClient,
     mint: &Pubkey,
-) -> Result<TokenMetadata, Box<dyn std::error::Error>> {
+) -> anyhow::Result<TokenMetadata> {
     let acct = rpc.get_account(mint).await?;
     let mint_acct = StateWithExtensions::<Mint>::unpack(&acct.data[..])?;
     let metadata = mint_acct.get_variable_len_extension::<TokenMetadata>()?;
     Ok(metadata)
 }
 
-pub async fn fetch_token_2022_account(
-    rpc: &RpcClient,
-    mint: &Pubkey,
-) -> Result<Account, Box<dyn std::error::Error>> {
+pub async fn fetch_token_2022_account(rpc: &RpcClient, mint: &Pubkey) -> anyhow::Result<Account> {
     let acct = rpc.get_account(mint).await?;
     let token_acct = StateWithExtensions::<Account>::unpack(&acct.data[..])?;
     Ok(token_acct.base)

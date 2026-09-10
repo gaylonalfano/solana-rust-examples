@@ -1,3 +1,4 @@
+use anyhow::{Context, bail};
 use solana_client::{
     nonblocking::rpc_client::RpcClient,
     rpc_config::{RpcAccountInfoConfig, RpcProgramAccountsConfig},
@@ -5,32 +6,40 @@ use solana_client::{
 };
 use solana_sdk::{program_pack::Pack, pubkey::Pubkey};
 
-#[derive(serde::Deserialize)]
-struct Env {
-    rpc_url: url::Url,
-    mint_account_pubkey: String,
+use super::RpcArgs;
+
+#[derive(clap::Args)]
+pub struct Args {
+    #[command(flatten)]
+    rpc: RpcArgs,
+    /// The pubkey address of the SPL Token mint account
+    #[arg(long, env = "MINT_ACCOUNT_PUBKEY")]
+    mint_account_pubkey: Pubkey,
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let env = envy::from_env::<Env>()?;
-    let client = RpcClient::new(env.rpc_url.to_string());
-    let mint: Pubkey = env.mint_account_pubkey.parse()?;
+impl Args {
+    pub async fn run(self) -> anyhow::Result<()> {
+        let client = self.rpc.client();
+        let mint = self.mint_account_pubkey;
 
-    let account = fetch_nft_account(&client, &mint).await?;
+        let account = fetch_nft_account(&client, &mint).await?;
 
-    let token_account =
-        spl_token_interface::state::Account::unpack(&mut account.data.decode().unwrap())?;
+        let data = account
+            .data
+            .decode()
+            .context("Failed to decode account data")?;
+        let token_account = spl_token_interface::state::Account::unpack(&data)?;
 
-    println!("{} owner:\n{}", mint.to_string(), token_account.owner);
+        println!("{} owner:\n{}", mint.to_string(), token_account.owner);
 
-    Ok(())
+        Ok(())
+    }
 }
 
 async fn fetch_nft_account(
     client: &RpcClient,
     mint: &Pubkey,
-) -> Result<solana_client::rpc_response::UiAccount, Box<dyn std::error::Error>> {
+) -> anyhow::Result<solana_client::rpc_response::UiAccount> {
     let filters = Some(vec![
         // account size
         RpcFilterType::DataSize(165),
@@ -63,8 +72,8 @@ async fn fetch_nft_account(
         .await?;
 
     match accounts.len() {
-        0 => Err("Account not found")?,
+        0 => bail!("Account not found"),
         1 => Ok(accounts[0].1.clone()),
-        _ => Err("Multiple NFT accounts found")?,
+        _ => bail!("Multiple NFT accounts found"),
     }
 }

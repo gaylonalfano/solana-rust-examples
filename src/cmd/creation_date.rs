@@ -1,3 +1,4 @@
+use anyhow::Context;
 use chrono::prelude::*;
 use solana_client::{
     nonblocking::rpc_client::RpcClient, rpc_response::RpcConfirmedTransactionStatusWithSignature,
@@ -8,39 +9,43 @@ use std::{
     time::{Duration, UNIX_EPOCH},
 };
 
-#[derive(serde::Deserialize)]
-struct Env {
-    rpc_url: url::Url,
-    account_pubkey: String,
+use super::RpcArgs;
+
+#[derive(clap::Args)]
+pub struct Args {
+    #[command(flatten)]
+    rpc: RpcArgs,
+    /// The pubkey address of the account you want to introspect
+    #[arg(long, env = "ACCOUNT_PUBKEY")]
+    account_pubkey: Pubkey,
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let env = envy::from_env::<Env>()?;
-    let rpc = RpcClient::new(env.rpc_url.to_string());
+impl Args {
+    pub async fn run(self) -> anyhow::Result<()> {
+        let rpc = self.rpc.client();
+        let addr = self.account_pubkey;
 
-    let addr: Pubkey = env.account_pubkey.parse()?;
+        let datetime = get_account_creation_date(&rpc, &addr).await?;
 
-    let datetime = get_account_creation_date(&rpc, &addr).await?;
+        let timestamp_str = datetime.format("%Y-%m-%d %H:%M:%S").to_string();
 
-    let timestamp_str = datetime.format("%Y-%m-%d %H:%M:%S").to_string();
+        println!("{} creation date:", addr.to_string());
+        println!("UTC - {}", timestamp_str);
 
-    println!("{} creation date:", addr.to_string());
-    println!("UTC - {}", timestamp_str);
-
-    Ok(())
+        Ok(())
+    }
 }
 
 async fn get_account_creation_date(
     rpc: &RpcClient,
     addr: &Pubkey,
-) -> Result<DateTime<Utc>, Box<dyn std::error::Error>> {
+) -> anyhow::Result<DateTime<Utc>> {
     #[async_recursion::async_recursion]
     async fn fetch(
         rpc: &RpcClient,
         addr: &Pubkey,
         before: Option<Signature>,
-    ) -> Result<RpcConfirmedTransactionStatusWithSignature, Box<dyn std::error::Error>> {
+    ) -> anyhow::Result<RpcConfirmedTransactionStatusWithSignature> {
         let mut sigs = rpc
             .get_signatures_for_address_with_config(
                 &addr,
@@ -53,7 +58,7 @@ async fn get_account_creation_date(
 
         sigs.sort_by_key(|sig| sig.block_time);
 
-        let earliest = sigs.first().ok_or("Empty signature list!")?;
+        let earliest = sigs.first().context("Empty signature list!")?;
 
         if sigs.len() < 1000 {
             Ok(earliest.clone())
@@ -66,7 +71,12 @@ async fn get_account_creation_date(
     let status = fetch(&rpc, &addr, None).await?;
 
     let d = UNIX_EPOCH
-        + Duration::from_secs(status.block_time.ok_or("Missing block time!")?.try_into()?);
+        + Duration::from_secs(
+            status
+                .block_time
+                .context("Missing block time!")?
+                .try_into()?,
+        );
 
     Ok(DateTime::<Utc>::from(d))
 }
